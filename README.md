@@ -1,5 +1,3 @@
-# tf-aws-infra
-
 # AWS Infrastructure Setup Using Terraform
 
 ## Prerequisites
@@ -26,3 +24,9 @@ aws configure --profile demo
 terraform init
 ```
 This command initializes Terraform, downloading required providers and setting up the backend.
+
+## Step 4: Plan the Infrastructure Deployment
+```bash
+terraform plan
+```
+This command shows the planned changes before applying them.
