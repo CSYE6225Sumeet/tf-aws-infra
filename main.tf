@@ -30,7 +30,7 @@ resource "aws_route_table_association" "public_subnet_association" {
 resource "aws_subnet" "public" {
   count                   = length(var.availability_zones)
   vpc_id                  = aws_vpc.main_vpc.id
-  cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index # Dynamically derived subnet
+  cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index) # Dynamically derived subnet
   availability_zone       = element(var.availability_zones, count.index)
   map_public_ip_on_launch = true
   tags                    = { Name = "${var.vpc_name}-public-${count.index}" }
