@@ -58,3 +58,76 @@ resource "aws_route_table_association" "private_subnet_association" {
 output "vpc_id" {
   value = aws_vpc.main_vpc.id
 }
+
+resource "aws_security_group" "app_sg" {
+  vpc_id = aws_vpc.main_vpc.id
+
+  name        = "application-security-group"
+  description = "Security group for EC2 instances hosting web applications"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow SSH access from anywhere"
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow HTTP traffic from anywhere"
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow HTTPS traffic from anywhere"
+  }
+
+  ingress {
+    from_port   = var.app_port
+    to_port     = var.app_port
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow application-specific traffic"
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound traffic"
+  }
+
+  tags = {
+    Name = "${var.vpc_name}-app-sg"
+  }
+}
+
+resource "aws_instance" "app_server" {
+  ami                         = var.ami_id
+  instance_type               = "t2.micro"
+  subnet_id                   = aws_subnet.public[0].id
+  vpc_security_group_ids      = [aws_security_group.app_sg.id]
+  associate_public_ip_address = true
+  key_name                    = var.key_pair_name
+
+  root_block_device {
+    volume_size           = 25
+    volume_type           = "gp2"
+    delete_on_termination = true
+  }
+
+  disable_api_termination = false
+
+  tags = {
+    Name = "${var.vpc_name}-app-server"
+  }
+}
+
