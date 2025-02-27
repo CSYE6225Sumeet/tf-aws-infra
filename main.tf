@@ -70,6 +70,7 @@ resource "aws_security_group" "app_sg" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
     description = "Allow SSH access from anywhere"
   }
 
@@ -78,6 +79,7 @@ resource "aws_security_group" "app_sg" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
     description = "Allow HTTP traffic from anywhere"
   }
 
@@ -86,6 +88,7 @@ resource "aws_security_group" "app_sg" {
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
     description = "Allow HTTPS traffic from anywhere"
   }
 
@@ -94,6 +97,7 @@ resource "aws_security_group" "app_sg" {
     to_port     = var.app_port
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
     description = "Allow application-specific traffic"
   }
 
@@ -102,6 +106,7 @@ resource "aws_security_group" "app_sg" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
     description = "Allow all outbound traffic"
   }
 
