@@ -123,6 +123,20 @@ resource "aws_instance" "app_server" {
   associate_public_ip_address = true
   key_name                    = var.key_pair_name
 
+  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
+
+  user_data = <<-EOF
+              #!/bin/bash
+              echo "DB_HOST=${aws_db_instance.csye6225_db.address}" >> /opt/webapp/src/.env
+              echo "DB_USER=${aws_db_instance.csye6225_db.username}" >> /opt/webapp/src/.env
+              echo "DB_PASSWORD=${aws_db_instance.csye6225_db.password}" >> /opt/webapp/src/.env
+              echo "DB_NAME=${aws_db_instance.csye6225_db.db_name}" >> /opt/webapp/src/.env
+              echo "AWS_REGION=${var.aws_region}" >> /opt/webapp/src/.env
+              echo "S3_BUCKET_NAME=${aws_s3_bucket.private_bucket.bucket}" >> /opt/webapp/src/.env
+              sudo chown csye6225:csye6225 /opt/webapp/src/.env
+              sudo systemctl restart webapp.service
+              EOF
+
   root_block_device {
     volume_size           = 25
     volume_type           = "gp2"
@@ -135,4 +149,147 @@ resource "aws_instance" "app_server" {
     Name = "${var.vpc_name}-app-server"
   }
 }
+
+#------------------------------------------------
+
+resource "aws_s3_bucket" "private_bucket" {
+  bucket = uuid()
+  # acl    = "private"
+  force_destroy = true
+
+  tags = {
+    Name = "private-s3-bucket"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "private_bucket_encryption" {
+  bucket = aws_s3_bucket.private_bucket.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "private_bucket_lifecycle" {
+  bucket = aws_s3_bucket.private_bucket.id
+
+  rule {
+    id     = "transition-to-ia"
+    status = "Enabled"
+
+    transition {
+      days          = 30
+      storage_class = "STANDARD_IA"
+    }
+  }
+}
+
+
+resource "aws_iam_role" "ec2_s3_role" {
+  name = "ec2-s3-access-role"
+
+  assume_role_policy = <<EOF
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "ec2.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  }
+  EOF
+}
+
+resource "aws_iam_policy" "s3_access_policy" {
+  name        = "s3-access-policy"
+  description = "Policy for EC2 to access S3"
+
+  policy = <<EOF
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "s3:ListBucket",
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ],
+        "Resource": [
+          "arn:aws:s3:::${aws_s3_bucket.private_bucket.id}",
+          "arn:aws:s3:::${aws_s3_bucket.private_bucket.id}/*"
+        ]
+      }
+    ]
+  }
+  EOF
+}
+
+resource "aws_iam_role_policy_attachment" "s3_attach" {
+  policy_arn = aws_iam_policy.s3_access_policy.arn
+  role       = aws_iam_role.ec2_s3_role.name
+}
+
+resource "aws_iam_instance_profile" "ec2_instance_profile" {
+  name = "ec2-instance-profile"
+  role = aws_iam_role.ec2_s3_role.name
+}
+
+#---------------------------------------------------
+resource "aws_security_group" "db_sg" {
+  vpc_id = aws_vpc.main_vpc.id
+
+  ingress {
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app_sg.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_db_parameter_group" "db_params" {
+  name   = "csye6225-db-params"
+  family = "mysql8.0"
+
+  parameter {
+    name  = "character_set_server"
+    value = "utf8mb4"
+  }
+}
+
+resource "aws_db_subnet_group" "db_subnet_group" {
+  name       = "csye6225-db-subnet-group"
+  subnet_ids = aws_subnet.private[*].id
+}
+
+resource "aws_db_instance" "csye6225_db" {
+  identifier             = var.db_identifier
+  engine                 = var.db_engine
+  instance_class         = var.db_instance_class
+  allocated_storage      = var.db_allocated_storage
+  username               = var.db_username
+  password               = var.db_password
+  db_name                = var.db_name
+  db_subnet_group_name   = aws_db_subnet_group.db_subnet_group.name
+  publicly_accessible    = false
+  vpc_security_group_ids = [aws_security_group.db_sg.id]
+  parameter_group_name   = aws_db_parameter_group.db_params.name
+
+  skip_final_snapshot = true
+}
+
 
