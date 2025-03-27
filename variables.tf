@@ -74,6 +74,11 @@ variable "db_allocated_storage" {
   type        = number
 }
 
+variable "log_file_path" {
+  description = "path for log file"
+  type        = string
+}
+
 # -------
 
 # variable "aws_access_key" {
