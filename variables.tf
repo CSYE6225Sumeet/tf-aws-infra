@@ -79,6 +79,91 @@ variable "log_file_path" {
   type        = string
 }
 
+variable "route53_zone_id" {
+  description = "Route53 Zone ID"
+  type        = string
+}
+
+variable "domain_name" {
+  description = "Domain Name"
+  type        = string
+}
+
+variable "scale_up_threshold" {
+  description = "Threshold Value for scale up"
+  type        = number
+}
+
+variable "scale_down_threshold" {
+  description = "Threshold Value for scale down"
+  type        = number
+}
+
+variable "evaluation_periods" {
+  description = "Evaluation Period"
+  type        = number
+}
+
+variable "metric_period" {
+  description = "Metric Period at which CloudWatch collects data points(in seconds)"
+  type        = number
+}
+
+variable "statistic" {
+  description = "Statistic"
+  type        = string
+}
+
+variable "asg_max_size" {
+  description = "ASG maximum no. of instances"
+  type        = number
+}
+
+variable "asg_min_size" {
+  description = "ASG minimum no. of instances"
+  type        = number
+}
+
+variable "asg_desired_capacity" {
+  description = "Desired no. of instances"
+  type        = number
+}
+
+variable "cooldown_period" {
+  description = "Minimum time period between actions"
+  type        = number
+}
+
+variable "autoscaling_policy_adjustment_type" {
+  description = "defines how the scaling adjustment is applied when the policy is triggered"
+  type        = string
+}
+
+variable "tg_protocol" {
+  description = "Protocol(HTTP/HTTPS)"
+  type        = string
+}
+
+variable "tg_interval" {
+  description = "Sets how often the Load Balancer performs health checks (in seconds)"
+  type        = number
+}
+
+variable "tg_timeout" {
+  description = "Defines how long the Load Balancer waits for a response from the target before"
+  type        = number
+}
+
+variable "tg_healthy_threshold" {
+  description = "The number of consecutive successful health checks required before marking an instance as healthy"
+  type        = number
+}
+
+variable "tg_unhealthy_threshold" {
+  description = "The number of consecutive failed health checks before marking an instance unhealthy"
+  type        = number
+}
+
 # -------
 
 # variable "aws_access_key" {
