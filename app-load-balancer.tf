@@ -26,11 +26,21 @@ resource "aws_lb_target_group" "web_tg" {
 
 resource "aws_lb_listener" "http_listener" {
   load_balancer_arn = aws_lb.web_alb.arn
-  port              = 80
-  protocol          = "HTTP"
+  port              = 443
+  protocol          = "HTTPS"
+
+  ssl_policy      = "ELBSecurityPolicy-2016-08"
+  certificate_arn = data.aws_acm_certificate.demo_ssl.arn
+
 
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.web_tg.arn
   }
+}
+
+data "aws_acm_certificate" "demo_ssl" {
+  domain      = var.domain_name
+  statuses    = ["ISSUED"]
+  most_recent = true
 }

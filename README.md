@@ -53,3 +53,18 @@ Once your work is over, use destroy command to delete all the resources
 ```bash
 terraform destroy -var-file="dev/demo.tfvars"
 ```
+
+## Steps to import the certificate
+
+```bash
+### SSL Certificate Import (Demo Environment)
+
+Before running the Terraform apply, make sure to import your external SSL certificate:
+
+```bash
+aws acm import-certificate \
+  --certificate fileb://certificate.crt \
+  --private-key fileb://private.key \
+  --certificate-chain fileb://ca_bundle.crt \
+  --region us-east-1
+```

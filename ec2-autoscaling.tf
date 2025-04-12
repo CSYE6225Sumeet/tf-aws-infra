@@ -12,9 +12,11 @@ resource "aws_launch_template" "web_lt" {
 
   user_data = base64encode(<<-EOF
     #!/bin/bash
+    SECRET_JSON=$(aws secretsmanager get-secret-value --region ${var.aws_region} --secret-id ${aws_secretsmanager_secret.db_password_secret.name} --query SecretString --output text)
+    DB_PASSWORD=$(echo $SECRET_JSON | jq -r .password)
+    echo "DB_PASSWORD=$DB_PASSWORD" >> /opt/webapp/src/.env
     echo "DB_HOST=${aws_db_instance.csye6225_db.address}" >> /opt/webapp/src/.env
     echo "DB_USER=${aws_db_instance.csye6225_db.username}" >> /opt/webapp/src/.env
-    echo "DB_PASSWORD=${aws_db_instance.csye6225_db.password}" >> /opt/webapp/src/.env
     echo "DB_NAME=${aws_db_instance.csye6225_db.db_name}" >> /opt/webapp/src/.env
     echo "AWS_REGION=${var.aws_region}" >> /opt/webapp/src/.env
     echo "S3_BUCKET_NAME=${aws_s3_bucket.private_bucket.bucket}" >> /opt/webapp/src/.env
@@ -32,6 +34,8 @@ resource "aws_launch_template" "web_lt" {
       volume_size           = 25
       volume_type           = "gp2"
       delete_on_termination = true
+      encrypted             = true
+      kms_key_id            = aws_kms_key.ec2_key.arn
     }
   }
 

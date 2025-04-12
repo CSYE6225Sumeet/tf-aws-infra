@@ -164,6 +164,15 @@ variable "tg_unhealthy_threshold" {
   type        = number
 }
 
+variable "account_id" {
+  description = "Account ID"
+  type        = string
+}
+
+variable "cli_user" {
+  description = "CLI USER"
+  type        = string
+}
 # -------
 
 # variable "aws_access_key" {
