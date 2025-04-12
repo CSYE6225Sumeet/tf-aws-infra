@@ -13,7 +13,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "private_bucket_en
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.s3_key.arn
     }
   }
 }
@@ -52,6 +53,26 @@ resource "aws_iam_role" "ec2_s3_role" {
   EOF
 }
 
+resource "aws_iam_policy" "secretsmanager_access" {
+  name        = "allow-secretsmanager-get"
+  description = "Policy for secret manager access"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret",
+          "kms:Decrypt"
+        ],
+        Resource = "${aws_secretsmanager_secret.db_password_secret.arn}"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_policy" "s3_access_policy" {
   name        = "s3-access-policy"
   description = "Policy for EC2 to access S3"
@@ -82,6 +103,12 @@ resource "aws_iam_role_policy_attachment" "s3_attach" {
   policy_arn = aws_iam_policy.s3_access_policy.arn
   role       = aws_iam_role.ec2_s3_role.name
 }
+
+resource "aws_iam_role_policy_attachment" "ec2_secrets_access_attachment" {
+  role       = aws_iam_role.ec2_s3_role.name
+  policy_arn = aws_iam_policy.secretsmanager_access.arn
+}
+
 
 resource "aws_iam_instance_profile" "ec2_instance_profile" {
   name = "ec2-instance-profile"
